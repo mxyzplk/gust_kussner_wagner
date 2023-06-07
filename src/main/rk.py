@@ -10,29 +10,28 @@ class Rk4:
         self.nvars = int(nvars)
         self.k = np.empty(int(nvars), 4)
 
-    def define_initial_condition(self, funcs):
-        for i in range(len(funcs)):
-            self.y0[i] = funcs[i]
 
-    def rk(self, rkstep, dydt, tstep, time):
+    def rk(self, rkstep, tstep, time):
+        #
         # RK 4th Order for an ODE
         # F = integral [ f(t) dt ]
         # F' = f(t)
-        for i in range(self.nvars):
-            if rkstep == 1:
+        #
+        for rkstep in range(self.nvars):
+            if rkstep == 0:
                 if time == 0:
-                    self.ya[i] = self.y0[i]
-                else
-                    self.ya[i] = self.y[i]
+                    self.ya[rkstep] = self.y0[rkstep]
+                else:
+                    self.ya[rkstep] = self.y[rkstep]
 
-                self.k[i, 1] = dydt[i]
-                self.y[i] = self.ya[i] + 0.5 * tstep * self.k[i, 1]
+                self.k[rkstep, rkstep] = self.dydt[rkstep]
+                self.y[rkstep] = self.ya[rkstep] + 0.5 * tstep * self.k[rkstep, 0]
+            elif rkstep == 1:
+                self.k[rkstep, rkstep] = self.dydt[rkstep]
+                self.y[rkstep] = self.ya[rkstep] + 0.5 * tstep * self.k[rkstep, 1]
             elif rkstep == 2:
-                self.k[i, 2] = dydt[i]
-                self.y[i] = self.ya[i] + 0.5 * tstep * self.k[i, 2]
+                self.k[rkstep, rkstep] = self.dydt[rkstep]
+                self.y[rkstep] = self.ya[rkstep] + 0.5 * tstep * self.k[rkstep, 2]
             elif rkstep == 3:
-                self.k[i, 3] = dydt[i]
-                self.y[i] = self.ya[i] + 0.5 * tstep * self.k[i, 3]
-            elif rkstep == 4:
-                self.k[i, 4] = dydt[i]
-                self.y[i] = self.ya[i] + (tstep / 6) * (self.k[i, 1] + 2 * self.k[i, 2] + 2 * self.k[i, 3] + self.k[i, 4])
+                self.k[rkstep, rkstep] =self.dydt[rkstep]
+                self.y[rkstep] = self.ya[rkstep] + (tstep / 6) * (self.k[rkstep, 0] + 2 * self.k[rkstep, 1] + 2 * self.k[rkstep, 2] + self.k[rkstep, 3])
