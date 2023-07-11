@@ -21,16 +21,19 @@ class Kussner:
         self.beta[1] = 0.728
         self.beta[2] = 4.84
 
-    def kussner_step_func(self, s):
-        return self.b[0] + self.b[1] * math.exp(-1.0 * self.beta[0] * s) +
-                           self.b[2] * math.exp(-1.0 * self.beta[1] * s) + 
-                           self.b[3] * math.exp(-1.0 * self.beta[2] * s)        
+    def evaluate_kussner_step_function(self, time, tas, mac):
+        return self.b[0] + self.b[1] * math.exp(-1.0 * self.beta[0] * (time * tas) / mac ) \
+                         + self.b[2] * math.exp(-1.0 * self.beta[1] * (time * tas) / mac ) \
+                         + self.b[3] * math.exp(-1.0 * self.beta[2] * (time * tas) / mac )   
 
-    def kussner_impulsive_func(self, s, t, tas, mac):
+
+    def evaluate_kussner_impulsive_function(self, s, time, tas, mac):
         v = []
-        v.append(-1.0 * self.b[1] * self.beta[0] * (tas / mac) * (math.exp(-1.0 * self.beta[0] * s)) * (math.exp(1.0 * self.beta[0] * ((t * tas) / mac))))
-        v.append(-1.0 * self.b[2] * self.beta[1] * (tas / mac) * (math.exp(-1.0 * self.beta[1] * s)) * (math.exp(1.0 * self.beta[1] * ((t * tas) / mac))))
-        v.append(-1.0 * self.b[3] * self.beta[2] * (tas / mac) * (math.exp(-1.0 * self.beta[2] * s)) * (math.exp(1.0 * self.beta[2] * ((t * tas) / mac))))
+        v.append(-1.0 * self.b[1] * self.beta[0] * (tas / mac) * (math.exp(-1.0 * self.beta[0] * s)) * (math.exp(1.0 * self.beta[0] * ((time * tas) / mac))))
+        v.append(-1.0 * self.b[2] * self.beta[1] * (tas / mac) * (math.exp(-1.0 * self.beta[1] * s)) * (math.exp(1.0 * self.beta[1] * ((time * tas) / mac))))
+        v.append(-1.0 * self.b[3] * self.beta[2] * (tas / mac) * (math.exp(-1.0 * self.beta[2] * s)) * (math.exp(1.0 * self.beta[2] * ((time * tas) / mac))))
+        
+        return v
         
     def evaluate_ag_lomax(self, s, g):
         # Lomax - Table 5.6
@@ -44,11 +47,5 @@ class Kussner:
 
         return -0.5 * self.beta[0] * (1.0 - math.cos(s / k)) - c[0] - c[1] - c[2]
 
-    def evaluate_kussner_function(self, s, tas, mac, g):
-        #
-        # F'(t) = 0.5 * pi * Clg()
-        #
-        a = self.evaluate_kussner_function(self, s)
-        b = (tas / mac) * (math.pi / g) * math.sin(2 * math.pi * s / g)
-        return a * b
+
 

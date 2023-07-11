@@ -21,8 +21,16 @@ class Wagner:
         self.beta[2] = 0.0
 
 
-    def evaluate_wagner_function(self, s):
-        return self.b[0] + self.b[1] * math.exp(-1.0 * self.beta[0] * s) \
-                         + self.b[2] * math.exp(-1.0 * self.beta[1] * s) \
-                         + self.b[3] * math.exp(-1.0 * self.beta[2] * s)
+    def evaluate_wagner_step_function(self, time, tas, mac):
+        return self.b[0] + self.b[1] * math.exp(-1.0 * self.beta[0] * (time * tas) / mac ) \
+                         + self.b[2] * math.exp(-1.0 * self.beta[1] * (time * tas) / mac ) \
+                         + self.b[3] * math.exp(-1.0 * self.beta[2] * (time * tas) / mac )
     
+
+    def evaluate_wagner_impulsive_function(self, s, time, tas, mac):
+        v = []
+        v.append(-1.0 * self.b[1] * self.beta[0] * (tas / mac) * (math.exp(-1.0 * self.beta[0] * s)) * (math.exp(1.0 * self.beta[0] * ((time * tas) / mac))))
+        v.append(-1.0 * self.b[2] * self.beta[1] * (tas / mac) * (math.exp(-1.0 * self.beta[1] * s)) * (math.exp(1.0 * self.beta[1] * ((time * tas) / mac))))
+        v.append(-1.0 * self.b[3] * self.beta[2] * (tas / mac) * (math.exp(-1.0 * self.beta[2] * s)) * (math.exp(1.0 * self.beta[2] * ((time * tas) / mac))))
+        
+        return v

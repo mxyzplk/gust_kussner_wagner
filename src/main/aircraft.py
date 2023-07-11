@@ -1,12 +1,55 @@
+import os
+from mass import Mass
+#
+#
 class Aircraft:
     def __init__(self):
-        self.dclda = None
-        self.Sw = None
-        self.mac = None
+        self.m = Mass()
+        
+        self.sw = 0
+        self.sh = 0
+        self.cw = 0
+        self.ch = 0
+        self.xlew = 0
+        self.xleh = 0
+        
+        self.get_dirs()
+        self.read_ac_data()
+        
+        
+    def get_dirs(self):
+        
+        main_dir = os.path.dirname(os.path.abspath(__file__))
+        resources_dir = os.path.join(main_dir, '../resources')
+        self.path = os.path.join(resources_dir, 'aircraft.txt')
 
-    def set_ac_parameters(self, sw, mac):
-        self.Sw = sw
-        self.mac = mac
 
-    def set_aero(self, dclda):
-        self.dclda = dclda
+    def read_ac_data(self):
+             
+        with open(self.path, 'r') as file:
+            
+            line = file.readline()
+            temp = line.split() 
+            self.sw = float(temp[0])
+            
+            line = file.readline()
+            temp = line.split()             
+            self.sh = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.cw = float(temp[0])
+            
+            line = file.readline()
+            temp = line.split()             
+            self.ch = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.xlew = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.xleh = float(temp[0])
+            
+        file.close()

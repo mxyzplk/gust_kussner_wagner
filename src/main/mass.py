@@ -1,42 +1,79 @@
-import numpy as np
-import math
-
-
+import os
+#
+#
 class Mass:
     def __init__(self):
-        self.weight = None
-        self.Ixx = None
-        self.Iyy = None
-        self.Izz = None
-        self.Ixy = None
-        self.Iyz = None
-        self.Ixz = None
-        self.x = None
-        self.y = None
-        self.z = None
-        self.A = None
-        self.C = None
-        self.D = None
-        self.E = None
-        self.F = None
+        self.weight = 0
+        self.cg = 0
+        self.Ixx = 0
+        self.Iyy = 0
+        self.Izz = 0
+        self.Ixy = 0
+        self.Iyz = 0
+        self.Ixz = 0
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.A = 0
+        self.C = 0
+        self.D = 0
+        self.E = 0
+        self.F = 0
+        self.path = None
+        
+        self.get_dirs()
+        self.read_inertia()
 
-    def def_inertia(self, weight, ixx=0, iyy=0, izz=0, ixy=0, iyz=0, ixz=0):
-        self.weight = weight
-        self.Ixx = ixx
-        self.Iyy = iyy
-        self.Izz = izz
-        self.Ixy = ixy
-        self.Iyz = iyz
-        self.Ixz = ixz
 
-        if ( ixx != 0 and izz != 0 and ixz != 0 ):
+    def get_dirs(self):
+        
+        main_dir = os.path.dirname(os.path.abspath(__file__))
+        resources_dir = os.path.join(main_dir, '../resources')
+        self.path = os.path.join(resources_dir, 'mass.txt')
+
+
+    def read_inertia(self):
+             
+        with open(self.path, 'r') as file:
+            
+            line = file.readline()
+            temp = line.split() 
+            self.weight = float(temp[0])
+            
+            line = file.readline()
+            temp = line.split()             
+            self.cg = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.Ixx = float(temp[0])
+            
+            line = file.readline()
+            temp = line.split()             
+            self.Iyy = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.Izz = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.Ixy = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.Iyz = float(temp[0])
+
+            line = file.readline()
+            temp = line.split() 
+            self.Ixz = float(temp[0])
+            
+        file.close()    
+
+        if ( self.Ixx != 0 and self.Izz != 0 and self.Ixz != 0 ):
             self.A = ((self.Iyy - self.Izz) / self.Ixx) - ((self.Ixz * self.Ixz) / (self.Ixx * self.Izz))
             self.C = ((self.Ixz * self.Ixz) / (self.Ixx * self.Izz)) + (self.Ixx - self.Iyy) / self.Izz
             self.D = (self.Ixz * (self.Iyy - self.Izz)) / (self.Ixx * self.Izz) - (self.Ixz / self.Izz)
             self.F = (self.Ixz * (self.Ixx - self.Iyy)) / (self.Ixx * self.Izz) + (self.Ixz / self.Ixx)
             self.E = 1.0 / (1.0 - ((self.Ixz * self.Ixz) / (self.Ixx * self.Izz)))
 
-    def def_cg(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z

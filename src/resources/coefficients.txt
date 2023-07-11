@@ -1,0 +1,4 @@
+5.1769            dCL / dalpha - Wing  [1/rad]
+0.35494           dCM / dalpha - wing  [1/rad]
+4.19000           dCL / dalpha - HT [1/rad]
+0.3122            downwash
