@@ -1,5 +1,5 @@
 8618.17           mass [kg]
-0.141             cg [%cma]
+0.1501            cg [%cma]
 7.003             xcg [m]
 0.000             ycg [m]
 0.353             zcg [m]

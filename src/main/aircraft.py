@@ -12,6 +12,12 @@ class Aircraft:
         self.ch = 0
         self.xlew = 0
         self.xleh = 0
+        self.zlew = 0
+        self.zleh = 0
+        self.xlaw = 0
+        self.xlah = 0
+        self.zlaw = 0
+        self.zlah = 0        
         
         self.get_dirs()
         self.read_ac_data()
@@ -47,9 +53,21 @@ class Aircraft:
             line = file.readline()
             temp = line.split() 
             self.xlew = float(temp[0])
+            self.zlew = float(temp[1])
+
+            line = file.readline()
+            temp = line.split() 
+            self.xlaw = float(temp[0])
+            self.zlaw = float(temp[1])
 
             line = file.readline()
             temp = line.split() 
             self.xleh = float(temp[0])
+            self.zleh = float(temp[1])
+
+            line = file.readline()
+            temp = line.split() 
+            self.xlah = float(temp[0])
+            self.zlah = float(temp[1])
             
         file.close()

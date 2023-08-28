@@ -1,100 +1,98 @@
-import numpy as np
+from aircraft import Aircraft
 import math
-import kussner
-import wagner
-import gust
-import mass
-import aircraft
-import airspeed
-import rk
 
-
-class Dof1:
+class ACModel:
     def __init__(self):
-        # 1 DOF Equation:
-        # wp(s) = (q*Sw*dCLda/weight)ae(s)
+        # Aircraft
+        self.ac = Aircraft()
         
-        self.v0 = None
-        self.h0 = None
-        self.aoa0 = None
-        self.ae = None
-        self.ag = None
-        self.ac = None
-        self.gust_obj = None
-        self.kussner_obj = kussner.Kussner()
-        self.wagner_obj = wagner.Wagner()
-        self.mass_obj = mass.Mass()
-        self.ac_obj = aircraft.Aircraft()
-        self.airspeed_obj = airspeed.Airspeed()
+        # Wind Axis = f(aoa)
+        self.clwb_wa = 0
+        self.cdwb_wa = 0
+        self.cmwb_wa = 0
+        self.clht_wa = 0
+        self.cdht_wa = 0
+        self.cmht_wa = 0   
+        self.cltab_wa = 0
+        self.cl_wa = 0
+        self.cd_wa = 0
+        self.cm_wa = 0
 
-    def set_gust(self, ude, nchords, mac, dt):
-        self.gust_obj = gust.Gust(ude, nchords, mac, dt)
+        # Wind Axis = f(aoaht)  
+        self.clht_wah = 0
+        self.cle_wah = 0 
+        self.cdht_wah = 0
 
-    def initial_conditions_dof1(self, v0, h0, aoa0, weight):
-        self.v0 = v0
-        self.h0 = h0
-        self.aoa0 = aoa0
-        self.mass_obj.def_inertia(weight)
-
-    def init_a_vectors(self):
-        self.ae = []
-        self.ag = []
-        self.ac = []
-        self.ae.append(0)
-        self.ag.append(0)
-        self.ac.append(0)
-
-    def eq_motion_dof1(self):
-        # Results file
-        f = open("dof1.txt", "w")
-
-        rkdof1 = rk.Rk4(6)
+        # Arms - Wind Axis
+        self.x_wa = 0
+        self.z_wa = 0
         
-        kussner_impulsive = np.empty(3)
-        #
-        # 0: kussner derivative function part 1
-        # 1: kussner derivative function part 2
-        # 2: kussner derivative function part 3
-        # 3: wagner derivative function part 1
-        # 4: wagner derivative function part 2
-        # 5: vertical acceleratiom
-        #
-        rkdof1.dydt[:] = 0  # derivatives values in t = 0
-        rkdof1.y0[:] = 0 # initial condition
+        self.eps = 0
+        self.aoaht = 0
+        self.clq_s = 0
+        self.cmq_s = 0
+        
+        self.ftx = 21997.14
+        self.myt = -9826.88
+        
+    def get_clwb_wind_axis(self, aoa):
+        self.clwb_wa = 0.090353983 * aoa + 0.209164559
+
+    def get_cdwb_wind_axis(self, aoa):
+        self.cdwb_wa = 0.000445905 * aoa * aoa + -0.000069685 * aoa + 0.025997036
+
+    def get_cmwb_wind_axis(self, aoa):
+        self.cmwb_wa = 0.006194872 * aoa + 5.81195E-05
+
+    def get_clht_aoaht_wind_axis_ht(self, aoaht):
+        self.clht_wa = 0.073129296 * aoaht * self.ac.sh / self.ac.sw
     
-        while(True):
-                        
-            for rkstep in range(4):
-                if rkstep == 0: # RK step 1
-                    time = self.gust_obj.time
-                elif rkstep == 1: # RK step 2
-                    time = self.gust_obj.time + 0.5 * self.gust_obj.dt
-                elif rkstep == 2: # RK step 3
-                    time = self.gust_obj.time + 0.5 * self.gust_obj.dt
-                elif rkstep == 3: # RK step 4
-                    time = self.gust_obj.time + self.gust_obj.dt
-                
-                # evaluate a_gust(t)
-                s = time * self.v0 / self.gust_obj.mac
-                u = self.gust_obj.evaluate_1_cosine_u_gust(s)
-                a_gust = math.atan(u / self.v0)
-                
-                # evaluate kussner impulsive function
-                kussner_impulsive = self.kussner_obj.kussner_impulsive_func(s, time, self.v0, self.gust_obj.mac)
-                
-                # evaluate kussner step function in s = 0:
-                kussner_zero = self.kussner_obj.kussner_step_func(0)
-                
-                rkdof1.rk(rkstep, self.gust_obj.dt, time)
-                
-                
-                
-                # Next time step
-                if rkstep == 3: 
-                    self.gust_obj.time = self.gust_obj.time + self.gust_obj.dt
-                    self.gust_obj.increment_arrays(self.v0, u)
-                    
+    def get_clht_elev_wind_axis_ht(self, elev):
+        self.cle_wa = 0.040317106 * elev * self.ac.sh / self.ac.sw
+    
+    def get_cdht_aoaht_wind_axis_ht(self, aoaht):
+        self.cdht_wa = (0.000084918 * 0.000084918 * aoaht - 0.000050100 * aoaht - 0.000009588) * self.ac.sh / self.ac.sw
+    
+    def get_aoa_ht(self, aoa, q):
+        self.eps = 0.3122 * aoa
+        self.aoaht = aoa - self.eps
 
+    def get_clq(self, q, tas):
+        qc2v = 0.5 * self.ac.cw * q / tas
+        self.clq_s = 6.189331083 * qc2v
+    
+    def get_cmq(self, q, tas):
+        qc2v = 0.5 * self.ac.cw * q / tas
+        self.cmq_s = -32.50291511 * qc2v
+        
+    def get_cltab(self, tab):
+        self.cltab_wa = 0.62 * tab * math.pi / 180
+        
+    def get_clht_wa(self):
+        cl = self.clht_wah + self.cle_wah
+        cd = self.cdht_wah
+        
+        self.clht_wa = cl * math.cos(self.eps * math.pi / 180) - cd * math.sin(self.eps * math.pi / 180) + self.cltab_wa
+        self.cdht_wa = cl * math.sin(self.eps * math.pi / 180) + cd * math.cos(self.eps * math.pi / 180)
+        
+        dx = (self.ac.xlah - self.ac.xlaw)
+        dz = (self.ac.zlah - self.ac.zlaw)
+        
+        self.cmht_wa = self.cdht_wa * (self.ac.zlah - self.ac.zlaw) - self.clht_wa
+        
+    def get_coefs_wa(self):        
+        self.cl_wa = self.clht_wa + self.clwb_wa
+        self.cd_wa = self.cdht_wa + self.cdwb_wa
+        self.cm_wa = self.cmwb_wa + self.cmht_wa
+        
 
 
         
+
+
+
+
+
+
+
+
