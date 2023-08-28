@@ -24,8 +24,8 @@ class ACModel:
         self.cdht_wah = 0
 
         # Arms - Wind Axis
-        self.x_wa = 0
-        self.z_wa = 0
+        self.dx_wa = 0
+        self.dz_wa = 0
         
         self.eps = 0
         self.aoaht = 0
@@ -68,15 +68,19 @@ class ACModel:
     def get_cltab(self, tab):
         self.cltab_wa = 0.62 * tab * math.pi / 180
         
-    def get_clht_wa(self):
+    def get_clht_wa(self, aoa):
         cl = self.clht_wah + self.cle_wah
         cd = self.cdht_wah
         
         self.clht_wa = cl * math.cos(self.eps * math.pi / 180) - cd * math.sin(self.eps * math.pi / 180) + self.cltab_wa
         self.cdht_wa = cl * math.sin(self.eps * math.pi / 180) + cd * math.cos(self.eps * math.pi / 180)
         
+        # Body Axis
         dx = (self.ac.xlah - self.ac.xlaw)
         dz = (self.ac.zlah - self.ac.zlaw)
+        
+        self.dx_wa = dx * 
+        self.dz_wa = 
         
         self.cmht_wa = self.cdht_wa * (self.ac.zlah - self.ac.zlaw) - self.clht_wa
         
