@@ -1,6 +1,6 @@
-173.8306          eas [m/s]
-238.445           tas [m/s]
-0.754             mach
-6096              altitude [m]
-15.24             ude [m/s]
+86.7              eas [m/s]
+86.7              tas [m/s]
+0.255             mach
+0                 altitude [m]
+20.1168           ude [m/s]
 25                chords
