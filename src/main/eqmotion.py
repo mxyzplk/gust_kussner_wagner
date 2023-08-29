@@ -11,6 +11,9 @@ class Trimming1g:
         # Mass
         self.mass = Mass()
         
+        # Model
+        self.model = ACModel()
+        
         # Controls
         self.elev = 0
         
@@ -23,6 +26,10 @@ class Trimming1g:
         
         # Condition
         self.cond = Condition()
+    
+    def trimming(self, x):
+        self.model.eval_db(aoa, q, aoa_g, aoa_ht_g, elev, tas, dynp, tab)
+        
         
 
 class ACModel:
