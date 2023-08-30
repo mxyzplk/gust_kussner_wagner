@@ -5,6 +5,9 @@ class Mass:
     def __init__(self):
         self.weight = 0
         self.cg = 0
+        self.x = 0
+        self.y = 0
+        self.z = 0
         self.Ixx = 0
         self.Iyy = 0
         self.Izz = 0
@@ -23,6 +26,8 @@ class Mass:
         
         self.get_dirs()
         self.read_inertia()
+        
+        #print("[mass] m : {:.1f} | ixx : {:.1f} | iyy : {:.1f} | izz : {:.1f} | ixz : {:.1f}".format(self.weight, self.Ixx, self.Iyy, self.Izz, self.Ixz))
 
 
     def get_dirs(self):
@@ -43,6 +48,18 @@ class Mass:
             line = file.readline()
             temp = line.split()             
             self.cg = float(temp[0])
+
+            line = file.readline()
+            temp = line.split()             
+            self.x = float(temp[0])
+            
+            line = file.readline()
+            temp = line.split()             
+            self.y = float(temp[0])
+
+            line = file.readline()
+            temp = line.split()             
+            self.z = float(temp[0])            
 
             line = file.readline()
             temp = line.split() 

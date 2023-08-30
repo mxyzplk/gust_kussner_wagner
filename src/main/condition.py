@@ -12,7 +12,7 @@ class Condition:
         self.path = None
         
         self.get_dirs()
-        self.read_ac_data()
+        self.read_condition()
 
         self.pdyn = 0.5 * 1.225 * self.eas * self.eas        
 
