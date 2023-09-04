@@ -1,5 +1,4 @@
 from aircraft import Aircraft
-import numpy as np
 from condition import Condition
 import math
 from mass import Mass
@@ -19,91 +18,73 @@ class Trimming1g:
         
         # Angles
         self.theta = 0.0
-        self.aoa = 0-0
-        self.aoa_ht = 0
-        self.aoa_g = 0
-        self.aoa_ht_g = 0
+        self.aoa = 0.0
+        self.aoa_ht = 0.0
+        self.aoa_g = 0.0
+        self.aoa_ht_g = 0.0
+        self.u = 0.0
+        self.w = 0.0
+        self.q = 0.0
+        self.up = 0.0
+        self.wp = 0.0
+        self.qp = 0.0
         
         # Condition
         self.cond = Condition()
         
         self.trimming()
-
-
-    def trimming_my(self, x):
-        # x ... elevator
-        self.model.eval_db(self.aoa, 0, 0, 0, x, self.cond.tas, self.cond.pdyn)
-        qp = self.model.my_b / self.ac.m.Iyy
+        self.get_dirs()
         
-        #print(x, self.aoa, self.elev, self.theta, self.model.my_b)
-        err = abs(qp)
-                
-        return err
+        self.u = self.cond.tas * math.cos(self.aoa * math.pi / 180)
+        self.w = self.cond.tas * math.sin(self.aoa * math.pi / 180)
+        self.nx = ((self.up + self.w * self.q) / 9.80665) + math.sin(self.theta)
+        self.nz = ((self.wp - self.u * self.q) / 9.80665) - math.cos(self.theta)            
+        
+        with open(self.path_trim, 'w') as file:
+            file.write("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | nx : {:.3f} | nz : {:.3f}".format(self.aoa, self.elev, self.theta, self.up, self.wp, self.qp, self.nx, self.nz))
+
+        file.close()
+        
+
+    def get_dirs(self):
+        
+        main_dir = os.path.dirname(os.path.abspath(__file__))
+        res_dir = os.path.join(main_dir, '../results')
+        self.path_trim = os.path.join(res_dir, 'trimming_results.txt')
+        
     
-    def trimming_nz(self, x):
-        # x ... aoa
-        self.model.eval_db(x, 0, 0, 0, 0, self.cond.tas, self.cond.pdyn)
-        wp = -9.80665 * math.cos(0 * math.pi / 180) + self.model.fz_b / self.ac.m.weight
-
-        err = abs(wp)
-        
-        return err
-
-    def trimming_theta(self, x):
-        self.model.eval_db(self.aoa, 0, 0, 0, self.elev, self.cond.tas, self.cond.pdyn)
-        wp = -9.80665 * math.cos(x * math.pi / 180) + self.model.fz_b / self.ac.m.weight
-        up = -9.80665 * math.sin(x * math.pi / 180) - self.model.fx_b / self.ac.m.weight
+    def trimming_func(self, x):
+        self.model.eval_db(x[0], 0, 0, 0, x[1], self.cond.tas, self.cond.pdyn)
+        wp = -9.80665 * math.cos(x[2] * math.pi / 180) + self.model.fz_b / self.ac.m.weight
+        up = -9.80665 * math.sin(x[2] * math.pi / 180) - self.model.fx_b / self.ac.m.weight
         qp = self.model.my_b / self.ac.m.Iyy
-        
+
         err = abs(wp) + abs(up) + abs(qp)
 
-        return err
+        return err    
     
     def trimming(self):
+
+        ibounds = scipy.optimize.Bounds([-15, -25, -5],[25, 15, 25])      
+
+        res = scipy.optimize.differential_evolution(self.trimming_func, ibounds, tol=1e-7, disp=True)
         
-        i = 0
-        x = np.empty(1)        
-        bounds_aoa = scipy.optimize.Bounds([-15], [25])
-        bounds_elev = scipy.optimize.Bounds([-25], [15])
-        bounds_theta = scipy.optimize.Bounds([-5], [25])
+        res.x
         
-        while True:
-            print("nz trimming")
-            res = scipy.optimize.minimize(self.trimming_nz, x, method='nelder-mead', options={'tol': 1e-8, 'disp': True}, bounds=bounds_aoa)
-            self.aoa = res.x[0]
-            if (i == 0):
-                x = np.empty(1)
-                x = np.empty(1)
-            else:
-                x[0] = self.elev
-            print("elev trimming")
-            res = scipy.optimize.minimize(self.trimming_my, x, method='nelder-mead', options={'tol': 1e-8, 'disp': True}, bounds=bounds_elev)
-            self.elev = res.x[0]
-            
-            if (i == 0):
-                x = np.empty(1)
-            else:
-                x[0] = self.theta
-                print("theta trimming")
-            res = scipy.optimize.minimize(self.trimming_theta, x, method='nelder-mead', options={'tol': 1e-8, 'disp': True}, bounds=bounds_theta)
-            self.theta = res.x[0]
-            
-            wp = float(-9.80665 * math.cos(self.theta * math.pi / 180) + self.model.fz_b / self.ac.m.weight)
-            up = float(-9.80665 * math.sin(self.theta * math.pi / 180) - self.model.fx_b / self.ac.m.weight)
-            qp = float(self.model.my_b / self.ac.m.Iyy)
-            
-            err = float((wp) + abs(up) + abs(qp))
-            
-            
-            print("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | err : {:.5f}".format(self.aoa, self.elev, self.theta, up, wp, qp, err))
-            i = i + 1
-            
-            input("Pause")
-            
-            if (abs(err) < 0.000001):
-                print(err)
-                break
+        wp = -9.80665 * math.cos(res.x[2] * math.pi / 180) + self.model.fz_b / self.ac.m.weight
+        up = -9.80665 * math.sin(res.x[2] * math.pi / 180) - self.model.fx_b / self.ac.m.weight
+        qp = self.model.my_b / self.ac.m.Iyy   
         
+        err = abs(wp) + abs(up) + abs(qp)
+            
+        print("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | err : {:.5f}".format(res.x[0], res.x[1], res.x[2], up, wp, qp, err))
+        
+        self.aoa = res.x[0]
+        self.elev = res.x[1]
+        self.theta = res.x[2]
+        self.up = up
+        self.wp = wp
+        self.qp = qp
 
 class ACModel:
     def __init__(self):
@@ -124,6 +105,8 @@ class ACModel:
         self.cl_wa = 0.0
         self.cd_wa = 0.0
         self.cm_wa = 0.0
+        self.mywb = 0.0
+        self.myht = 0.0
 
         # Wind Axis = f(aoaht)  
         self.clht_wah = 0.0
@@ -156,6 +139,7 @@ class ACModel:
         # Angles
         self.eps = 0.0
         self.aoaht = 0.0
+        self.etab = 0.0
         
         # Engine
         self.ftx_b = 21997.14
@@ -166,8 +150,10 @@ class ACModel:
         
         self.get_dirs()
         
+        self.np = 0.25 - 0.006194872 / 0.090353983
+        
         with open(self.path_db, 'w') as file:
-            file.write("        AOA          ELEV         DYNP         CLWB         CDWB         CMWB         CLHT         CDHT         CLE         CLTAB         CMHT     \n")
+            file.write("        AOA          AOAHT        ELEV         ETAB         DYNP        FXHT         FZHT         MYHT         FXE          FZE          MYE          FXWB         FZWB         MYWB         FXTAB        FZTAB        MYTAB        \n")
         
         file.close()        
 
@@ -209,7 +195,8 @@ class ACModel:
         self.cmq_s = -32.50291511 * qc2v
         
     def get_cltab(self, tab):
-        self.cltab_wa = 0.62 * tab * math.pi / 180
+        self.cltab_wa = 0.62 * tab * (self.ac.sh / self.ac.sw) * math.pi / 180
+        self.etab = tab
         
     def get_wing_coefficients_wa(self, aoa, aoa_g, q, tas):
         self.get_clwb_wind_axis(aoa, aoa_g)
@@ -232,6 +219,14 @@ class ACModel:
         # HT aerodynamic coefficients - Wind Axis
         self.clht_wa = cl * math.cos(self.eps * math.pi / 180) - cd * math.sin(self.eps * math.pi / 180) + self.cltab_wa
         self.cdht_wa = cl * math.sin(self.eps * math.pi / 180) + cd * math.cos(self.eps * math.pi / 180)
+
+        self.clht_wa1 = self.clht_wah * math.cos(self.eps * math.pi / 180) - self.cdht_wah * math.sin(self.eps * math.pi / 180)
+        self.cdht_wa1 = self.clht_wah * math.sin(self.eps * math.pi / 180) + self.cdht_wah * math.cos(self.eps * math.pi / 180)
+
+        self.cle_wa = self.cle_wah * math.cos(self.eps * math.pi / 180)
+        self.cde_wa = self.cle_wah * math.sin(self.eps * math.pi / 180)
+
+        self.cmht_wa1 = self.cdht_wa1 * self.dz_wa - self.clht_wa1 * self.dx_wa        
         
         # Distance between HT and Wing aerodynamic centers - Body Axis
         self.dx_b = (self.ac.xlah - self.ac.xlaw)
@@ -239,13 +234,11 @@ class ACModel:
         
         # Distance between HT and Wing aerodynamic centers - Wind Axis
         self.dx_wa = self.dx_b * math.cos(aoa * math.pi / 180) + self.dz_b * math.sin(aoa * math.pi / 180)
-        self.dz_wa = -1.0* self.dx_b * math.sin(aoa * math.pi / 180) + self.dz_b * math.sin(aoa * math.pi / 180)
+        self.dz_wa = -self.dx_b * math.sin(aoa * math.pi / 180) + self.dz_b * math.cos(aoa * math.pi / 180)
         
         # HT Pitch moment
         self.cmht_wa = self.cdht_wa * self.dz_wa - self.clht_wa * self.dx_wa
-        
-        #rint("[db-ht-wa] aoaht : {:.2f} | cd : {:.3f} | cl : {:.3f} | cmwb : {:.3f}".format(self.aoaht, self.cdht_wa, self.clht_wa, self.cmht_wa))        
-    
+            
     def eval_db(self, aoa, q, aoa_g, aoa_ht_g, elev, tas, dynp):
         self.get_wing_coefficients_wa(aoa, aoa_g, q, tas)
         self.get_ht_coefficients_wa(aoa, q, aoa_ht_g, tas, elev)
@@ -255,7 +248,7 @@ class ACModel:
     def sum_coefficients_wa(self):        
         self.cl_wa = self.clht_wa + self.clwb_wa
         self.cd_wa = self.cdht_wa + self.cdwb_wa
-        self.cm_wa = self.cmwb_wa + self.cmht_wa + self.cmq_s
+        self.cm_wa = self.cmwb_wa * self.ac.cw + self.cmht_wa + self.cmq_s * self.ac.cw
         
     def sum_coefficients_b(self, aoa, elev, pdyn):
         self.cd_b = -1.0 * self.cl_wa * math.sin(aoa * math.pi / 180) + self.cd_wa * math.cos(aoa * math.pi / 180)
@@ -263,15 +256,61 @@ class ACModel:
         # Cm at c.g.
         self.dxcgw_b = self.ac.xlaw - self.mass.x
         self.dzcgw_b = self.ac.zlaw - self.mass.z       
-        self.cm_b = self.cmht_wa - self.cl_b * self.dxcgw_b + self.cd_b * self.dzcgw_b
+        self.cm_b = self.cm_wa - self.cl_b * self.dxcgw_b + self.cd_b * self.dzcgw_b
         # Forces and moments
         self.fx_b = self.cd_b * pdyn * self.ac.sw - self.ftx_b
         self.fz_b = self.cl_b * pdyn * self.ac.sw
         self.my_b = self.cm_b * pdyn * self.ac.sw + self.myt_b
+        # Logs
+        self.mywb = self.cmwb_wa * self.ac.cw * pdyn * self.ac.sw
+        self.cdwb_g = -1.0 * self.clwb_wa * math.sin(aoa * math.pi / 180) + self.cdwb_wa * math.cos(aoa * math.pi / 180)
+        self.clwb_g = 1.0 * self.cdwb_wa * math.sin(aoa * math.pi / 180) + self.clwb_wa * math.cos(aoa * math.pi / 180) + self.clq_s
+        self.fzwb_g = self.clwb_g * pdyn * self.ac.sw
+        self.fxwb_g = self.cdwb_g * pdyn * self.ac.sw
+        self.cdht_g = -1.0 * self.clht_wa * math.sin(aoa * math.pi / 180) + self.cdht_wa * math.cos(aoa * math.pi / 180)
+        self.clht_g = 1.0 * self.cdht_wa * math.sin(aoa * math.pi / 180) + self.clht_wa * math.cos(aoa * math.pi / 180)
+        self.cdht_g1 = -1.0 * self.clht_wa1 * math.sin(aoa * math.pi / 180) + self.cdht_wa1 * math.cos(aoa * math.pi / 180)
+        self.clht_g1 = 1.0 * self.cdht_wa1 * math.sin(aoa * math.pi / 180) + self.clht_wa1 * math.cos(aoa * math.pi / 180)        
+        self.fzht_g = self.clht_g * pdyn * self.ac.sw
+        self.fxht_g = self.cdht_g * pdyn * self.ac.sw
+        self.cde_g = -1.0 * self.cle_wa * math.sin(aoa * math.pi / 180) + self.cde_wa * math.cos(aoa * math.pi / 180)
+        self.cle_g = 1.0 * self.cde_wa * math.sin(aoa * math.pi / 180) + self.cle_wa * math.cos(aoa * math.pi / 180)
+        self.etabcdb_g = -1.0 * self.cltab_wa * math.sin(aoa * math.pi / 180)
+        self.etabclb_g = self.cltab_wa * math.cos(aoa * math.pi / 180)        
+        self.fze_g = self.cle_g * pdyn * self.ac.sw
+        self.fxe_g = self.cde_g * pdyn * self.ac.sw
+        self.fztab_g = self.etabclb_g * pdyn * self.ac.sh
+        self.fxtab_g = self.etabcdb_g * pdyn * self.ac.sh         
+        self.fzht_g1 = self.clht_g1 * pdyn * self.ac.sw
+        self.fxht_g1 = self.cdht_g1 * pdyn * self.ac.sw         
+        self.dxcgh_b = self.ac.xlah - self.mass.x
+        self.dzcgh_b = self.ac.zlah - self.mass.z          
+        self.mywbcg = self.mywb + (- self.clwb_g * self.dxcgw_b + self.cdwb_g * self.dzcgw_b) * pdyn * self.ac.sw
+        self.myecg = - self.fze_g * self.dxcgh_b + self.fxe_g * self.dzcgh_b
+        self.mytabcg = - self.fztab_g * self.dxcgh_b + self.fxtab_g * self.dzcgh_b
+        self.myhtcg = - self.fzht_g1 * self.dxcgh_b + self.fxht_g1  * self.dzcgh_b
+        self.myht = self.cmht_wa  * pdyn * self.ac.sw
         
         with open(self.path_db, 'a') as file:
-            file.write("{:12.3f} {:12.3f} {:12.0f} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e}\n".format(float(aoa), float(elev), float(pdyn), float(self.clwb_wa), float(self.cdwb_wa), float(self.cmwb_wa), float(self.clht_wah), float(self.cdht_wah), float(self.cle_wah), float(self.cltab_wa), float(self.cmht_wa / self.ac.cw)))                       
-
+            file.write("{:12.3f} {:12.3f} {:12.3f} {:12.3f} {:12.0f} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e} {:12.4e}\n".format(
+                float(aoa),
+                float(self.aoaht), 
+                float(elev), 
+                float(self.etab), 
+                float(pdyn), 
+                float(self.fxht_g1), 
+                float(self.fzht_g1), 
+                float(self.myhtcg),                 
+                float(self.fxe_g), 
+                float(self.fze_g), 
+                float(self.myecg), 
+                float(self.fxwb_g), 
+                float(self.fzwb_g), 
+                float(self.mywbcg), 
+                float(self.fxtab_g), 
+                float(self.fztab_g), 
+                float(self.mytabcg)))                       
+        
         file.close()
                
         
@@ -291,8 +330,8 @@ class ACModel:
         return tab
         
     
-        
-        
+                
+
     
         
         

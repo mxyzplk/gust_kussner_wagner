@@ -7,14 +7,15 @@ import math
 
 class Wagner:
     
-    def __init__(self, angle0, tas, mac):
+    def __init__(self, tas, mac):
         self.mac = mac
         # Kussner Function Coefficients
         self.b = np.empty(3)
         self.beta = np.empty(2)
         self.define_coefficients()
-        # Runge Kutta        
-        self.rk = rk.Rk4(2, 0)
+        # Runge Kutta
+        y0 = [0, 0] 
+        self.rk = rk.Rk4(2, y0)
         # Kg(0)
         self.wagner0 = self.wagner_step_function(0, tas)
 
@@ -46,3 +47,8 @@ class Wagner:
         
         return integral
 
+    def eval_rkstep(self,  time, dt, rkstep, angle, tas):
+        self.wagner_rkstep(time, dt, rkstep, angle, tas)
+        integral =  self.wagner_convolution_integral(time, tas, angle, rkstep)
+        
+        return integral

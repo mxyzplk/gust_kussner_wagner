@@ -10,7 +10,7 @@ class Rk4:
         self.y0 = np.empty(self.nvar)
         
         for i in range(self.nvar):
-            self.yo[i] = float(y0[i])
+            self.y0[i] = float(y0[i])
         
 
     def rk(self, rkstep, dt, time, dydt):

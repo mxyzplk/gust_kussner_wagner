@@ -1,3 +1,4 @@
-from eqmotion import Trimming1g
+from gust import Gust
 
-a = Trimming1g()
+b = Gust()
+

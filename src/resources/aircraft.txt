@@ -1,6 +1,6 @@
 42.021             Wing area [m2]
 6.501              HT area [m2]
-2.228              MAC - Wing [m]
+2.086              MAC - Wing [m]
 1.167              MAC - HT [m]
 6.690  1.443       XLE, ZLE - Wing [m]
 7.212  1.443       XLA, ZLA - Wing [m]

@@ -8,14 +8,15 @@ import math
 
 class Kussner:
 
-    def __init__(self, angle0, tas, mac):
+    def __init__(self, tas, mac):
         self.mac = mac
         # Kussner Function Coefficients
         self.b = np.empty(4)
         self.beta = np.empty(3)
         self.define_coefficients()
-        # Runge Kutta        
-        self.rk = rk.Rk4(3, 0)
+        # Runge Kutta
+        y0 = [0, 0, 0]        
+        self.rk = rk.Rk4(3, y0)
         # Kg(0)
         self.kussner0 = self.kussner_step_function(0, tas)
 
@@ -50,3 +51,10 @@ class Kussner:
                                          + self.b[3] * (math.exp(-1.0 * self.beta[2] * (tas / self.mac) * time)) * self.rk.y[rkstep - 1, 2]
         
         return integral
+    
+    def eval_rkstep(self,  time, dt, rkstep, angle, tas):
+        self.kussner_rkstep(time, dt, rkstep, angle, tas)
+        integral =  self.kussner_convolution_integral(time, tas, angle, rkstep)
+        
+        return integral
+    
