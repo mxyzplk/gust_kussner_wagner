@@ -67,7 +67,7 @@ class Trimming1g:
 
         ibounds = scipy.optimize.Bounds([-15, -25, -5],[25, 15, 25])      
 
-        res = scipy.optimize.differential_evolution(self.trimming_func, ibounds, tol=1e-7, disp=True)
+        res = scipy.optimize.differential_evolution(self.trimming_func, ibounds, tol=1e-7, disp=False)
         
         res.x
         
@@ -77,7 +77,7 @@ class Trimming1g:
         
         err = abs(wp) + abs(up) + abs(qp)
             
-        print("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | err : {:.5f}".format(res.x[0], res.x[1], res.x[2], up, wp, qp, err))
+        #print("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | err : {:.5f}".format(res.x[0], res.x[1], res.x[2], up, wp, qp, err))
         
         self.aoa = res.x[0]
         self.elev = res.x[1]
@@ -140,6 +140,7 @@ class ACModel:
         self.eps = 0.0
         self.aoaht = 0.0
         self.etab = 0.0
+        self.deda = 0.3122
         
         # Engine
         self.ftx_b = 21997.14
@@ -185,6 +186,7 @@ class ACModel:
         self.eps = 0.3122 * aoa
         self.dxcght_b = self.ac.xlah - self.mass.x
         self.aoaht = aoa - self.eps + aoa_ht_g + self.dxcght_b * q * (180 / math.pi) / tas
+        #print("[aoaht] aoa: {:10.4f} aoaht: {:10.4f} q: {:10.4f} eps: {:10.4f}".format(aoa, self.aoaht, q, self.eps))
 
     def get_clq(self, q, tas):
         qc2v = 0.5 * self.ac.cw * q / tas

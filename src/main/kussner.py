@@ -38,6 +38,7 @@ class Kussner:
 
     def kussner_rkstep(self, time, dt, rkstep, angle, tas):
         dydt = []
+        #print("[kussner] tas: {:10.4f} time: {:10.4f} angle: {:10.4f} rkstep: {:10.4f}".format(tas, time, angle, rkstep))
         dydt.append(angle * self.beta[0] * (tas / self.mac) * (math.exp(self.beta[0] * ((time * tas) / self.mac))))
         dydt.append(angle * self.beta[1] * (tas / self.mac) * (math.exp(self.beta[1] * ((time * tas) / self.mac))))
         dydt.append(angle * self.beta[2] * (tas / self.mac) * (math.exp(self.beta[2] * ((time * tas) / self.mac))))

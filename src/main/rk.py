@@ -24,7 +24,7 @@ class Rk4:
                 if time == 0:
                     self.ya[i] = self.y0[i]
                 else:
-                    self.ya[i] = self.y[3]
+                    self.ya[i] = self.y[rkstep - 1, i]
                     
                 self.k[rkstep - 1, i] = dydt[i]
                 self.y[rkstep - 1, i] = self.ya[i] + 0.5 * dt * self.k[rkstep - 1, i]
