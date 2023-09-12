@@ -51,11 +51,18 @@ class Gust:
         self.aoaght = np.empty(self.nps)   # AoA Gust - HT
 
         # Intermediate parameters
+        self.aoa_g = np.empty(self.nps)
+        self.aoa_g_ht = np.empty(self.nps)
         self.aoa_kussner_wb = np.empty(self.nps)
         self.aoa_wagner_wb = np.empty(self.nps)        
         self.aoa_kussner_ht = np.empty(self.nps)
-        self.aoa_wagner_ht = np.empty(self.nps)               
-    
+        self.aoa_wagner_ht = np.empty(self.nps)
+        self.aoa_wagner_wb2 = np.empty(self.nps)         
+        self.aoa_wagner_ht2 = np.empty(self.nps)        
+        self.time_wb = np.empty(self.nps)
+        self.time_ht = np.empty(self.nps)  
+        self.aoa_w = np.empty(self.nps)
+        self.aoa_w_ht = np.empty(self.nps)    
         
         self.t[0] = 0.0
         self.ug[0] = 0.0
@@ -73,19 +80,26 @@ class Gust:
         for i in range(int(self.nps) - 1):
             self.t[i + 1] = self.t[i] + self.dt
             self.s[i + 1] = self.tas * self.t[i + 1] / self.mac
-            self.ug[i + 1] = 0.5 * self.ude * (1 - math.cos((2 * math.pi * self.s[i + 1]) / self.g))
-        
+            self.ug[i + 1] = 0.5 * self.ude * (1 - math.cos((2 * math.pi * self.s[i + 1]) / self.chords))
+            
         self.delaywb = self.ini.ac.xlew / self.tas
         self.delayht = self.ini.ac.xleh / self.tas
         
         self.get_dirs()
         self.run_gust()
-        self.plot_gust(self.aoawbtot, "AOA WB TOTAL", self.path_fig_gust1)
-        self.plot_gust(self.aoawbtot, "AOA WB GUST", self.path_fig_gust2)
-        self.plot_gust(self.aoawbtot, "AOA HT GUST", self.path_fig_gust3)
-        self.plot_gust(self.aoawbtot, "NZ", self.path_fig_gust4)
-        self.plot_gust(self.aoawbtot, "Q", self.path_fig_gust5)
-        self.plot_gust(self.aoawbtot, "QP", self.path_fig_gust6)        
+        self.plot_gust(self.aoawbtot[0:self.nps-1], "AOA WB TOTAL", self.path_fig_gust1)
+        self.plot_gust(self.aoawb, "AOA WB", self.path_fig_gust2)
+        self.plot_gust(self.aoaht, "AOA HT", self.path_fig_gust3)
+        self.plot_gust(self.nz, "NZ", self.path_fig_gust4)
+        self.plot_gust(self.q, "Q", self.path_fig_gust5)
+        self.plot_gust(self.theta, "THETA", self.path_fig_gust9)
+        self.plot_gust(self.qp[0:self.nps-1], "QP", self.path_fig_gust6)
+        self.plot_gust(self.wp[0:self.nps-1], "WP", self.path_fig_gust12)
+        self.plot_gust(self.aoa_g[0:self.nps-1], "AG", self.path_fig_gust7)
+        self.plot_gust(self.ug[0:self.nps-1], "UG", self.path_fig_gust8)
+        self.plot_gust(self.aoa_kussner_wb[0:self.nps-1], "AGWBK", self.path_fig_gust10)
+        self.plot_gust(self.aoa_wagner_wb[0:self.nps-1], "AGWBK", self.path_fig_gust11)
+        self.plot_gust(self.w, "W", self.path_fig_gust13)            
 
     def get_dirs(self):
         
@@ -100,10 +114,18 @@ class Gust:
         self.path_fig_gust4 = os.path.join(res_dir, 'graph_nz.png')
         self.path_fig_gust5 = os.path.join(res_dir, 'graph_q.png')
         self.path_fig_gust6 = os.path.join(res_dir, 'graph_qp.png')
+        self.path_fig_gust7 = os.path.join(res_dir, 'graph_ag.png')
+        self.path_fig_gust8 = os.path.join(res_dir, 'graph_ug.png')
+        self.path_fig_gust9 = os.path.join(res_dir, 'graph_theta.png')
+        self.path_fig_gust10 = os.path.join(res_dir, 'graph_aoa_wb_kussner.png')
+        self.path_fig_gust11 = os.path.join(res_dir, 'graph_aoa_wb_wagner.png')
+        self.path_fig_gust12 = os.path.join(res_dir, 'graph_wp.png')
+        self.path_fig_gust13 = os.path.join(res_dir, 'graph_w.png')
+
         
         with open(self.path_gust, 'w') as file:
-            file.write("PERIOD: {:12.4f} | LENGTH: {:12.4f} | SIMULATED TIME: {:12.4f} | NPS: {:12.4f}\n". format(self.g/self.tas, self.g, self.tlimit, self.nps))
-            file.write("      TIME         U            AOAWBTOT     AOAWB        AOAWB_G      AOAHT        AOAHT_G      NX           NZ           \n")
+            file.write("PERIOD: {:12.4f} | LENGTH: {:12.4f} | SIMULATED TIME: {:12.4f} | NPS: {:8d}\n". format(self.g/self.tas, self.g, self.tlimit, self.nps))
+            file.write("      TIME         U            AOAWBTOT     AOAWB        AOAWB_G      AOAHT        AOAHT_G      U            W            Q            UP           WP           FX           FZ           MY           NX           NZ           \n")
             
         file.close()
         
@@ -132,18 +154,30 @@ class Gust:
         self.aoawbtot[0] = self.ini.aoa
         self.aoaht[0] = self.ini.aoa_ht
         self.aoagwb[0] = 0.0
-        self.aoaght[0] = 0.0   
+        self.aoaght[0] = 0.0        
         
         # Auxiliary - AoA
         self.aoa_kussner_wb[:] = 0.0
         self.aoa_wagner_wb[:] = 0.0        
         self.aoa_kussner_ht[:] = 0.0
-        self.aoa_wagner_ht[:] = 0.0          
+        self.aoa_wagner_ht[:] = 0.0
+        self.aoa_wagner_ht2[:] = 0.0 
+        self.aoa_wagner_wb2[:] = 0.0              
+        self.time_wb[:] = 0.0
+        self.time_ht[0] = 0.0
+        self.aoa_g[0] = 0.0
+        self.aoa_g_ht[0] = 0.0
+        self.aoa_w[0] = 0.0
+        self.aoa_w_ht[0] = 0.0               
 
-        self.nx[0] = ((self.up[0] + self.w[0] * self.q[0]) / 9.80665) + math.sin(self.theta[0])
-        self.nz[0] = ((self.wp[0] - self.u[0] * self.q[0]) / 9.80665) - math.cos(self.theta[0])
+        self.nx[0] = -(((self.up[0] + self.w[0] * self.q[0]) / 9.80665) + math.sin(self.theta[0] * math.pi / 180))
+        self.nz[0] = -(((self.wp[0] - self.u[0] * self.q[0]) / 9.80665) - math.cos(self.theta[0] * math.pi / 180))
+        
+        with open(self.path_gust, 'a') as file:
+            file.write("{:12.5f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.1f} {:12.1f} {:12.1f} {:12.4f} {:12.4f}\n".format(self.t[0], self.ug[0], self.aoawbtot[0], self.aoawb[0], self.aoagwb[0], self.aoaht[0], self.aoaght[0], self.u[0], self.w[0], self.q[0], self.up[0], self.wp[0], self.ini.model.fx_b, self.ini.model.fz_b, self.ini.model.my_b, self.nx[0], self.nz[0]))
+            file.close()
 
-        for i in range(1, self.nps, 1):
+        for i in range(self.nps-1):
             
             for j in range(4): # Runge Kutta
             
@@ -157,97 +191,107 @@ class Gust:
                 elif (j == 3):
                     trk = self.t[i] + self.dt
             
-                # Time WB
+                # Time WB - Kussner
                 if (trk >= self.delaywb):
-                    timewb = trk - self.delaywb
-                    ugwb = np.interp(timewb, self.t, self.ug)
-                    awbg = math.atan(ugwb / self.tas)   # Gust AOA - Free stream
+                    self.time_wb[i] = trk - self.delaywb
+                    ugwb = np.interp(self.time_wb[i], self.t, self.ug)
+                    self.aoa_g[i] = math.atan(ugwb / self.tas)   # Gust AOA - Free stream
                 else:
-                    timewb = 0.0
+                    self.time_wb[i] = 0.0
                     ugwb = 0.0
-                    awbg = 0.0
-                
-                # Time HT
-                if (trk >= self.delayht):
-                    timeht = trk - self.delayht
-                    ahtg = np.interp(timeht, self.t, self.aoa_kussner_wb) # Gust AOA - Kussner Effect
-                else:
-                    timeht = 0.0
-                    ahtg = 0.0
-                
+                    self.aoa_g[i]  = 0.0
+
                 # Kussner - Wing
-                self.aoa_kussner_wb[i] = self.rkgwb.eval_rkstep(timewb, self.dt, j+1, awbg, self.tas)
+                self.aoa_kussner_wb[i] = self.rkgwb.eval_rkstep(self.time_wb[i], self.dt, j+1, self.aoa_g[i], self.tas)
+                
+                # Time HT - Kussner
+                if (trk >= self.delayht):
+                    self.time_ht[i] = trk - self.delayht
+                    self.aoa_g_ht[i] = np.interp(self.time_ht[i], self.t, self.aoa_g) - self.amodel.deda * np.interp(self.time_ht[i], self.t, self.aoa_kussner_wb) # Gust AOA - Kussner Effect
+                else:
+                    self.time_ht[i] = 0.0
+                    self.aoa_g_ht[i] = 0.0
                 
                 # Kussner - HT
-                self.aoa_kussner_ht[i] = self.rkght.eval_rkstep(timeht, self.dt, j+1, ahtg, self.tas)
+                self.aoa_kussner_ht[i] = self.rkght.eval_rkstep(self.time_ht[i], self.dt, j+1, self.aoa_g_ht[i], self.tas)
                 
+                # Time WB - Wagner
                 if (i == 0):
-                    aqwb = 0
-                    aqht = 0
+                    self.aoa_w[i] = 0
                 else:
-                    aqwb = math.atan((self.w[i] - self.w[i-1]) / self.tas + (self.q[i] - self.q[i-1]) * glwb / self.tas)
-                    aqht = math.atan((self.w[i] - self.w[i-1]) / self.tas + (self.q[i] - self.q[i-1]) * (glwb + glht) / self.tas)
-                
-                #print("[gust] t: {:10.4f} twb: {:10.4f} ag: {:10.4f} agk: {:10.4f}".format(trk, timewb, awbg, awbg1))
-                awbw1 = self.rkwwb.eval_rkstep(timewb, self.dt, j+1, aqwb, self.tas)
-                ahtw1 = self.rkwht.eval_rkstep(timeht, self.dt, j+1, aqht, self.tas)
-                
-                awbwag = awbw1 - aqwb
-                ahtwag = ahtw1 - aqht
-                
-                self.aoagwb[i] = (self.aoa_kussner_wb[i] + awbwag) * 180 / math.pi
-                self.aoaght[i] = (ahtg1 + ahtwag) * 180 / math.pi
-               
-                
-                if (trk == 0):
-                    pass
+                    self.aoa_w[i] = math.atan((self.w[i] - self.w[i-1]) / self.tas + (self.q[i] - self.q[i-1]) * glwb / self.tas)
+
+                # Wagner - Wing
+                self.aoa_wagner_wb[i] = self.rkwwb.eval_rkstep(self.time_wb[i], self.dt, j+1, self.aoa_w[i], self.tas)
+
+                # Time HT - Wagner 
+                if (i == 0):
+                    self.aoa_w_ht[i] = 0
                 else:
-                    #print("[amodel] aoa: {:10.4f} aoaht: {:10.4f} q: {:10.4f}".format(self.aoagwb[i], self.aoaht[i-1], self.q[i-1]))
-                    self.amodel.eval_db(self.aoawb[i-1], self.q[i-1], self.aoagwb[i], self.aoaght[i], self.ini.elev, self.tas, self.ini.cond.pdyn)
-                    self.wp[i] = -9.80665 * math.cos(self.theta[i-1] * math.pi / 180) + self.amodel.fz_b / self.ini.ac.m.weight
-                    self.up[i] = -9.80665 * math.sin(self.theta[i-1] * math.pi / 180) - self.amodel.fx_b / self.ini.ac.m.weight 
-                    self.qp[i] = self.amodel.my_b / self.ini.ac.m.Iyy
-                    self.thetap[i] = self.q[i]
+                    self.aoa_w_ht[i] = math.atan((self.w[i] - self.w[i-1]) / self.tas + (self.q[i] - self.q[i-1]) * (glwb + glht) / self.tas) - self.amodel.deda * np.interp(self.time_ht[i], self.t, self.aoa_wagner_wb)
+                
+                # Wagner - HT
+                self.aoa_wagner_ht[i] = self.rkwht.eval_rkstep(self.time_ht[i], self.dt, j+1, self.aoa_w_ht[i], self.tas)
+                
+                self.aoa_wagner_wb2[i] = self.aoa_wagner_wb[i]  - self.aoa_w[i]
+                self.aoa_wagner_ht2[i] = self.aoa_wagner_ht[i]  - self.aoa_w_ht[i]
+                
+                self.aoagwb[i] = (self.aoa_kussner_wb[i] + self.aoa_wagner_wb2[i]) * 180 / math.pi
+                self.aoaght[i] = (self.aoa_kussner_ht[i] + self.aoa_wagner_ht2[i]) * 180 / math.pi             
+                
+                #print("[amodel] aoa: {:10.4f} aoaht: {:10.4f} q: {:10.4f}".format(self.aoagwb[i], self.aoaht[i-1], self.q[i-1]))
+                self.amodel.eval_db(self.aoawb[i], self.q[i], self.aoagwb[i], self.aoaght[i], self.ini.elev, self.tas, self.ini.cond.pdyn)
+                self.wp[i] = - self.q[i] * self.u[i] - 9.80665 * math.cos(self.theta[i] * math.pi / 180) + self.amodel.fz_b / self.ini.ac.m.weight
+                self.up[i] = - self.w[i] * self.q[i] - 9.80665 * math.sin(self.theta[i] * math.pi / 180) + self.amodel.fx_b / self.ini.ac.m.weight 
+                self.qp[i] = self.amodel.my_b / self.ini.ac.m.Iyy
+                self.thetap[i] = self.q[i]
+                
+                dydt[0] = self.wp[i]
+                dydt[1] = self.up[i]
+                dydt[2] = self.qp[i]
+                dydt[3] = self.thetap[i]
+                
+                self.rkm.rk(j+1, self.dt, self.t[i], dydt)
+                
+                self.w[i + 1] = self.rkm.y[j - 1, 0]
+                self.u[i + 1] = self.rkm.y[j - 1, 1]
+                self.q[i + 1] = self.rkm.y[j - 1, 2]
+                self.theta[i + 1] = self.rkm.y[j - 1, 3]
+                                    
+                self.aoawb[i + 1] = math.atan(self.w[i + 1] / self.tas) * 180 / math.pi
+                self.aoaht[i + 1] = self.amodel.aoaht
+                self.nx[i + 1] = (((self.up[i] + self.w[i + 1] * self.q[i]) / 9.80665) + math.sin(self.theta[i + 1] * math.pi / 180))
+                self.nz[i + 1] = ((self.wp[i] + self.u[i + 1] * self.q[i]) / 9.80665) + math.cos(self.theta[i + 1] * math.pi / 180)  
+ 
+
+                if (j == 3):
+                    self.aoawbtot[i] = self.aoawb[i] + self.aoagwb[i]
+                    with open(self.path_gust, 'a') as file:
+                        file.write("{:12.5f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.1f} {:12.1f} {:12.1f} {:12.4f} {:12.4f}\n".format(self.t[i], self.ug[i], self.aoawbtot[i], self.aoawb[i], self.aoagwb[i], self.aoaht[i], self.aoaght[i], self.u[i], self.w[i], self.q[i], self.up[i], self.wp[i], self.amodel.fx_b, self.amodel.fz_b, self.amodel.my_b, self.nx[i], self.nz[i]))
+                        file.close()
                     
-                    dydt[0] = self.wp[i]
-                    dydt[1] = self.up[i]
-                    dydt[2] = self.qp[i]
-                    dydt[3] = self.thetap[i]
+                with open(self.path_logs, 'a') as file:
+                    file.write("TIME: {:12.4f} | TIME_WB: {:12.4f} | TIME_HT: {:12.4f} |  UW: {:8.4f} | RKSTEP: {:3d} | AGW: {:12.6f} |  AGH: {:12.6f} | AGWK: {:12.6f} |  AGHK: {:12.6f} | AGWW1: {:12.6f} |  AGHW1: {:12.6f} | AGWW2: {:12.6f} |  AGHW2: {:12.6f}\n". format(trk, self.time_wb[i], self.time_ht[i], ugwb, j+1, self.aoa_g[i], self.aoa_g_ht[i], self.aoa_kussner_wb[i], self.aoa_kussner_ht[i], self.aoa_wagner_wb[i], self.aoa_wagner_ht[i], self.aoa_wagner_wb2[i], self.aoa_wagner_ht2[i]))
                     
-                    self.rkm.rk(j+1, self.dt, self.t[i], dydt)
-                    
-                    self.w[i] = self.rkm.y[j - 1, 0]
-                    self.u[i] = self.rkm.y[j - 1, 1]
-                    self.w[i] = self.rkm.y[j - 1, 2]
-                    self.theta[i] = self.rkm.y[j - 1, 3]
-                    
-                    if (j == 3):
-                        self.aoawbtot[i] = self.aoawb[i] + self.aoagwb[i]
-                        with open(self.path_gust, 'a') as file:
-                            file.write("{:12.5f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f} {:12.4f}\n".format(self.t[i], self.ug[i], self.aoawbtot[i], self.aoawb[i], self.aoagwb[i], self.aoaht[i], self.aoaght[i],  self.nx[i], self.nz[i]))
-                            file.close()
-                    
-                    self.aoawb[i] = math.atan(self.w[i] / self.tas) * 180 / math.pi
-                    self.aoaht[i] = self.amodel.aoaht
-                    self.nx[i] = ((self.up[i] + self.w[i] * self.q[i]) / 9.80665) + math.sin(self.theta[i])
-                    self.nz[i] = ((self.wp[i] - self.u[i] * self.q[i]) / 9.80665) - math.cos(self.theta[i])
-                    
-                    with open(self.path_logs, 'a') as file:
-                        file.write("TIME: {:12.4f} | TIME_WB: {:12.4f} | TIME_HT: {:12.4f} |  UW: {:8.4f} |  UH: {:8.4f} | RKSTEP: {:3d} | AGWK: {:8.4f} |  AGHK: {:8.4f} | AGWW: {:8.4f} |  AGHW: {:8.4f}\n". format(trk, timewb, timeht, ugwb, ught, j+1, awbg, ahtg, aqwb, aqht))
-                        
-                    file.close()   
+                file.close()   
                 
                 
     def plot_gust(self, yarray, label, file_path):
         plt.style.use('ggplot')
         
+        ilen = len(yarray)
+        
         # plot
-        plt.plot(self.t[:], yarray)
+        plt.plot(self.t[0:ilen], yarray)
         
         plt.xlabel('TIME')
         plt.ylabel(label)
 
-        plt.savefig(file_path)                 
+        plt.savefig(file_path)    
+
+        plt.clf()
+
+        plt.close()             
 
                     
                 

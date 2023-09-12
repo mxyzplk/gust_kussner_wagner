@@ -35,13 +35,15 @@ class Trimming1g:
         self.trimming()
         self.get_dirs()
         
+        
+        self.aoa_ht = self.model.aoaht
         self.u = self.cond.tas * math.cos(self.aoa * math.pi / 180)
         self.w = self.cond.tas * math.sin(self.aoa * math.pi / 180)
-        self.nx = ((self.up + self.w * self.q) / 9.80665) + math.sin(self.theta)
-        self.nz = ((self.wp - self.u * self.q) / 9.80665) - math.cos(self.theta)            
+        self.nx = ((self.up + self.w * self.q) / 9.80665) + math.sin(self.theta * math.pi / 180)
+        self.nz = ((self.wp - self.u * self.q) / 9.80665) - math.cos(self.theta * math.pi / 180)            
         
         with open(self.path_trim, 'w') as file:
-            file.write("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | nx : {:.3f} | nz : {:.3f}".format(self.aoa, self.elev, self.theta, self.up, self.wp, self.qp, self.nx, self.nz))
+            file.write("[eq] aoa : {:.4f} | elev : {:.3f} | theta : {:.4f} | up : {:.3f} | wp : {:.3f} | qp : {:.3f} | nx : {:.3f} | nz : {:.3f}".format(self.aoa, self.elev, self.theta, self.up, self.wp, self.qp, -self.nx, -self.nz))
 
         file.close()
         

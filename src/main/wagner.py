@@ -42,8 +42,8 @@ class Wagner:
     
     
     def wagner_convolution_integral(self, time, tas, angle, rkstep):                    
-        integral = angle * self.wagner0 + self.b[1] * (math.exp(-1.0 * self.beta[0] * (tas / self.mac) * time)) * self.rk.y[rkstep - 1, 0] \
-                                         + self.b[2] * (math.exp(-1.0 * self.beta[1] * (tas / self.mac) * time)) * self.rk.y[rkstep - 1, 1]
+        integral = angle * self.wagner0 - self.b[1] * (math.exp(-1.0 * self.beta[0] * (tas / self.mac) * time)) * self.rk.y[rkstep - 1, 0] \
+                                         - self.b[2] * (math.exp(-1.0 * self.beta[1] * (tas / self.mac) * time)) * self.rk.y[rkstep - 1, 1]
         
         return integral
 
